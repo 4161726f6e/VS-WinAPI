@@ -58,7 +58,13 @@ def load(a):
     dropped = sorted(set(counts.index) - set(keep))
     df = df[df.category.isin(keep)]
     # frequency rows are looked up in the archive whose copy of the report is used
-    want = {(r.source_archive, r.report_id): r.archive for r in df.itertuples()}
+    # Frequency rows are looked up in the archive whose copy of the report is used.
+    # In the published release, freq_00002.csv is already merged (it holds the rows
+    # taken from the 00003 copy) and there is no freq_00003.csv, so fall back to
+    # the report's own archive when its source archive has no frequency file.
+    have = {os.path.basename(p)[5:10] for p in glob.glob(os.path.join(a.freq_dir, "freq_*.csv"))}
+    want = {((r.source_archive if r.source_archive in have else r.archive), r.report_id): r.archive
+            for r in df.itertuples()}
 
     X_parts, keys, apis = [], [], None
     for path in sorted(glob.glob(os.path.join(a.freq_dir, "freq_*.csv"))):
